@@ -17,7 +17,8 @@
   "repository": "https://github.com/Cheewbacca/DiscordBirthdays.git",
   "dependencies": {
     "discord.js": "^14.14.1",
-    "dotenv": "^16.3.1"
+    "dotenv": "^16.3.1",
+    "mongodb": "^6.3.0"
   },
   "devDependencies": {
     "eslint": "^8.55.0",
