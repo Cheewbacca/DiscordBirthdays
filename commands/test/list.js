@@ -19,10 +19,12 @@ const getList = async (interaction) => {
 
     const currentEvent = await db.collection('events').findOne({}, { sort: { $natural: -1 } });
 
-    const { collectionName } = currentEvent;
+    const { collectionName } = currentEvent || {};
 
     if (!collectionName) {
-        interaction.reply({
+        await mongo.close();
+
+        return interaction.reply({
             content: 'Something went wrong !',
         });
     }

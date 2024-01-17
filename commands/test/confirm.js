@@ -22,12 +22,14 @@ const confirmCommand = async (interaction) => {
 
     const currentEvent = await db.collection('events').findOne({}, { sort: { $natural: -1 } });
 
-    const { collectionName } = currentEvent;
+    const { collectionName } = currentEvent || {};
 
     console.log('currentEvent', collectionName);
 
     if (!collectionName) {
-        interaction.reply({
+        await mongo.close();
+
+        return interaction.reply({
             content: 'Something went wrong with your confirmation',
         });
     }
