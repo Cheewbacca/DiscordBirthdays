@@ -1,6 +1,7 @@
 const { client } = require('../discordSetup');
 const { BIRTHDAY_MAN, MAIN_TEXT, CARD_DETAILS } = require('../constants/modal');
 const { users } = require('../config.json');
+const { mongo } = require('../mongoSetup');
 
 const submitPrompt = async (interaction) => {
     if (!interaction.isModalSubmit()) {
@@ -24,7 +25,7 @@ const submitPrompt = async (interaction) => {
 
     const valuesAsArray = mappedKeys.map((key) => fields.get(key)?.value).filter(Boolean);
 
-    if (valuesAsArray.length !== 3) {
+    if (valuesAsArray.length !== mappedKeys.length) {
         interaction.reply({
             content: 'Missing required fields',
         });
@@ -44,20 +45,50 @@ const submitPrompt = async (interaction) => {
         return;
     }
 
+    await mongo.connect().catch(() => {
+        interaction.reply({
+            content: 'Failed connection to db',
+        });
+    });
+
+    const db = mongo.db('ExpoBirthdays');
+
+    const collectionName = `confirms_${birthdayId}_${new Date().getFullYear()}`;
+
+    const collection = await db.collections({ name: collectionName });
+
+    if (!collection.length) {
+        await db.createCollection(collectionName);
+    }
+
     return Promise.all(
         usersWithoutBirthdayMan.map(({ id }) =>
-            client.users.fetch(id, false).then((user) => user.send(`${text}\n\n${cardDetails}`)),
+            client.users.fetch(id, false).then((user) => {
+                user.send(`${text}\n\n${cardDetails}`);
+                return Promise.resolve(user);
+            }),
         ),
     )
         .then(() => {
             interaction.reply({
-                content: 'All users received their notifications!',
+                content: `All users received their notifications! \n\n ${usersWithoutBirthdayMan
+                    .map(({ name }) => name)
+                    .join(', ')}`,
             });
         })
+        .then(() =>
+            db.collection('events').insertOne({
+                collectionName,
+                timeStamp: Number(new Date()),
+            }),
+        )
         .catch((err) => {
             interaction.reply({
                 content: err.message ?? 'Something went wrong',
             });
+        })
+        .finally(() => {
+            mongo.close();
         });
 };
 
