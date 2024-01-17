@@ -3,9 +3,10 @@ const { token } = require('./config.json');
 const { client } = require('./discordSetup');
 const { commonCommands } = require('./interactions/common');
 const { submitPrompt } = require('./interactions/submitPrompt');
+const logger = require('./logger');
 
 client.once(Events.ClientReady, (readyClient) => {
-    console.log(`Ready! Logged in as ${readyClient.user.tag}`);
+    logger.log(`Ready! Logged in as ${readyClient.user.tag}`);
 });
 
 // Execute commands from commands folder
