@@ -2,11 +2,14 @@ const { client } = require('../discordSetup');
 const { BIRTHDAY_MAN, MAIN_TEXT, CARD_DETAILS } = require('../constants/modal');
 const { users } = require('../config.json');
 const { mongo } = require('../mongoSetup');
+const console = require('../logger');
 
 const submitPrompt = async (interaction) => {
     if (!interaction.isModalSubmit()) {
         return;
     }
+
+    console.log('Prompt submitted');
 
     const userName = interaction.user.username;
     const userId = interaction.user.id;
@@ -37,6 +40,8 @@ const submitPrompt = async (interaction) => {
 
     const usersWithoutBirthdayMan = users.filter(({ id }) => id !== birthdayId);
 
+    console.dir(usersWithoutBirthdayMan);
+
     if (usersWithoutBirthdayMan.length === users.length) {
         interaction.reply({
             content: 'Wrong id was provided! Try one more time',
@@ -55,18 +60,26 @@ const submitPrompt = async (interaction) => {
 
     const collectionName = `confirms_${birthdayId}_${new Date().getFullYear()}`;
 
+    console.log('collectionName: ', collectionName);
+
     const collection = await db.collections({ name: collectionName });
 
     if (!collection.length) {
         await db.createCollection(collectionName);
     }
 
-    return Promise.all(
+    return Promise.allSettled(
         usersWithoutBirthdayMan.map(({ id }) =>
-            client.users.fetch(id, false).then((user) => {
-                user.send(`${text}\n\n${cardDetails}`);
-                return Promise.resolve(user);
-            }),
+            client.users
+                .fetch(id, false)
+                .then((user) => {
+                    console.log(`${user} has received message`);
+                    user.send(`${text}\n\n${cardDetails}`);
+                    return Promise.resolve(user);
+                })
+                .catch((err) => {
+                    console.error(err);
+                }),
         ),
     )
         .then(() => {

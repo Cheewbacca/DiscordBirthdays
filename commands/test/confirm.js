@@ -1,5 +1,6 @@
 const { SlashCommandBuilder } = require('discord.js');
 const { mongo } = require('../../mongoSetup');
+const console = require('../../logger');
 
 const confirmCommand = async (interaction) => {
     if (!interaction.isChatInputCommand()) {
@@ -8,6 +9,8 @@ const confirmCommand = async (interaction) => {
 
     const userName = interaction.user.username;
     const userId = interaction.user.id;
+
+    console.log('Confirm initiated from ', userName);
 
     await mongo.connect().catch(() => {
         interaction.reply({
@@ -21,9 +24,19 @@ const confirmCommand = async (interaction) => {
 
     const { collectionName } = currentEvent;
 
+    console.log('currentEvent', collectionName);
+
     if (!collectionName) {
         interaction.reply({
             content: 'Something went wrong with your confirmation',
+        });
+    }
+
+    const hasConfirmed = await db.collection(collectionName).findOne({ userId });
+
+    if (hasConfirmed) {
+        return interaction.reply({
+            content: 'You have already confirmed your participation of current event !',
         });
     }
 
@@ -40,6 +53,8 @@ const confirmCommand = async (interaction) => {
         });
 
     await mongo.close();
+
+    console.log(userName, ' confirmed');
 
     return interaction.reply({
         content: 'Thanks !',
